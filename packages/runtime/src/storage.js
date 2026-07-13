@@ -10,7 +10,10 @@ class InMemoryStore {
   }
 
   get(key) {
-    return this._map.get(key) ?? null;
+    if (this._map.has(key)) {
+      return this._map.get(key);
+    }
+    return null;
   }
 
   set(key, value) {

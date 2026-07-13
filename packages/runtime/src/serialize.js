@@ -5,7 +5,7 @@
 import { sha256 } from "./hash.js";
 import { blobStore } from "./blob-store.js";
 
-export function serialize(value, visited = new WeakSet()) {
+export async function serialize(value, visited = new WeakSet()) {
   if (value === null || value === undefined) return value;
   if (typeof value === "boolean" || typeof value === "number" || typeof value === "string") {
     return value;
@@ -17,15 +17,8 @@ export function serialize(value, visited = new WeakSet()) {
 
   if (value instanceof Blob || value instanceof File) {
     const isFile = value instanceof File;
-    const buf = value instanceof ArrayBuffer ? value : value.buffer;
-    let arrayBuf;
-    if (buf instanceof ArrayBuffer) {
-      arrayBuf = buf;
-    } else {
-      const syncReader = new FileReaderSync();
-      arrayBuf = syncReader.readAsArrayBuffer(value);
-    }
-    const h = sha256(arrayBuf);
+    const arrayBuf = await value.arrayBuffer();
+    const h = await sha256(arrayBuf);
     blobStore.set(h, arrayBuf);
     const meta = { name: value.name, type: value.type, lastModified: value.lastModified };
     return { __t: isFile ? "f" : "l", h, m: isFile ? meta : { type: value.type } };
@@ -33,7 +26,7 @@ export function serialize(value, visited = new WeakSet()) {
 
   if (value instanceof ArrayBuffer || ArrayBuffer.isView(value)) {
     const arrayBuf = value instanceof ArrayBuffer ? value : value.buffer;
-    const h = sha256(arrayBuf);
+    const h = await sha256(arrayBuf);
     blobStore.set(h, arrayBuf);
     return { __t: "b", h };
   }
@@ -41,7 +34,7 @@ export function serialize(value, visited = new WeakSet()) {
   if (value instanceof Map) {
     const entries = [];
     for (const [k, v] of value) {
-      entries.push([serialize(k, visited), serialize(v, visited)]);
+      entries.push([await serialize(k, visited), await serialize(v, visited)]);
     }
     return { __t: "m", v: entries };
   }
@@ -49,7 +42,7 @@ export function serialize(value, visited = new WeakSet()) {
   if (value instanceof Set) {
     const arr = [];
     for (const v of value) {
-      arr.push(serialize(v, visited));
+      arr.push(await serialize(v, visited));
     }
     return { __t: "s", v: arr };
   }
@@ -70,14 +63,14 @@ export function serialize(value, visited = new WeakSet()) {
     if (Array.isArray(value)) {
       const result = [];
       for (const item of value) {
-        result.push(serialize(item, visited));
+        result.push(await serialize(item, visited));
       }
       visited.delete(value);
       return result;
     }
     const result = {};
     for (const key of Object.keys(value)) {
-      result[key] = serialize(value[key], visited);
+      result[key] = await serialize(value[key], visited);
     }
     visited.delete(value);
     return result;
@@ -118,6 +111,6 @@ export function deserialize(value) {
 
 export async function toCacheKey(stepId, args) {
   if (args === undefined) return stepId;
-  const hash = await sha256(JSON.stringify(serialize(args)));
+  const hash = await sha256(JSON.stringify(await serialize(args)));
   return `${stepId}:${hash}`;
 }

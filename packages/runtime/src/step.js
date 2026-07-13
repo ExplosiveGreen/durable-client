@@ -38,7 +38,7 @@ export async function __step(stepId, fn, retryConfig, args, instance) {
     try {
       const result = await fn();
       // Store serialized result (deserialize reverses this)
-      stepStore.set(cacheKey, serialize(result));
+      stepStore.set(cacheKey, await serialize(result));
       return result;
     } catch (err) {
       lastError = err;

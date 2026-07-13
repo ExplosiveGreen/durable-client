@@ -36,3 +36,4 @@ The `__step(stepId, fn, retryConfig)` function must:
 
 - After completing the implementation, run `git add -A && git commit -m "feat: implement runtime __step core"` to commit your work.
 - Write clean, well-structured TypeScript.
+- **Check async consistency across the serialization module.** The `sha256` function in `hash.js` is `async` and returns a `Promise<string>`. Any code that calls `sha256` must use `await`. In particular, the `serialize` function in `serialize.js` calls `sha256` for Blob/File/ArrayBuffer/TypedArray values — if those calls are not awaited, the hash values will be Promise objects instead of hex strings, breaking blob deduplication and cache keys. If `serialize` needs to await, it must be declared `async` and all recursive calls must also be awaited.
