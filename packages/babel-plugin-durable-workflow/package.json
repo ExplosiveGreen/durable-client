@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "description": "Babel plugin that transforms @workflow decorated functions into durable step-based workflows",
   "main": "src/index.js",
+  "dependencies": {
+    "@babel/helper-plugin-utils": "^7.24.0",
+    "@babel/template": "^7.24.0",
+    "@babel/types": "^7.24.0"
+  },
   "peerDependencies": {
     "@babel/core": "^7.0.0"
   },

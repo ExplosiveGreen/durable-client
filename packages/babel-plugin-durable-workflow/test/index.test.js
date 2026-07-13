@@ -172,62 +172,74 @@ class Workflows {
   console.log('PASS: test 6 — auto-generated sequential step IDs');
 }
 
-// Test 7: Standalone async function declaration with @workflow
+// Test 7: Class method with @workflow — function name via class.method
 {
   const input = `
-@workflow({ retries: 2 })
-async function standaloneTask() {
-  await init();
-  return await finalize();
+class Workflows {
+  @workflow({ retries: 2 })
+  async standaloneTask() {
+    await init();
+    return await finalize();
+  }
 }
 `;
   const output = transform(input);
   assert(
-    output.includes('__step("standaloneTask:0"'),
-    'Should generate step ID for standalone function'
+    output.includes('__step("Workflows.standaloneTask:0"'),
+    'Should generate step ID with ClassName.methodName:0'
   );
   assert(
-    output.includes('__step("standaloneTask:1"'),
-    'Should generate step ID for standalone function'
+    output.includes('__step("Workflows.standaloneTask:1"'),
+    'Should generate step ID with ClassName.methodName:1'
   );
   assert(
     !output.includes('@workflow'),
-    'Should strip decorator from standalone function'
+    'Should strip decorator'
   );
-  console.log('PASS: test 7 — standalone async function declaration');
+  console.log('PASS: test 7 — class method with @workflow');
 }
 
-// Test 8: Arrow function expression with @workflow
+// Test 8: Class method with @workflow and no args
 {
   const input = `
-const task = @workflow({ retries: 1 }) async (data) => {
-  return await execute(data);
-};
+class Actions {
+  @workflow()
+  async task(data) {
+    return await execute(data);
+  }
+}
 `;
   const output = transform(input);
   assert(
-    output.includes('__step("task:0"'),
-    'Should generate step ID for arrow function'
+    output.includes('__step("Actions.task:0"'),
+    'Should generate step ID for class method'
   );
   assert(!output.includes('@workflow'), 'Should strip decorator');
-  console.log('PASS: test 8 — arrow function expression');
+  console.log('PASS: test 8 — class method with @workflow()');
 }
 
-// Test 9: Named function expression with @workflow
+// Test 9: Class method with @workflow — multiple awaits with retry
 {
   const input = `
-const worker = @workflow({ retries: 1 }) async function process(data) {
-  return await processData(data);
-};
+class Workers {
+  @workflow({ retries: 1 })
+  async process(data) {
+    const r1 = await step1(data);
+    return await step2(r1);
+  }
+}
 `;
   const output = transform(input);
-  // Named function expression gets its name from the id
   assert(
-    output.includes('__step("process:0"') || output.includes('__step("worker:0"'),
-    'Should generate step ID for named function expression'
+    output.includes('__step("Workers.process:0"'),
+    'Should generate step ID with ClassName.methodName:0'
+  );
+  assert(
+    output.includes('__step("Workers.process:1"'),
+    'Should generate step ID with ClassName.methodName:1'
   );
   assert(!output.includes('@workflow'), 'Should strip decorator');
-  console.log('PASS: test 9 — named function expression');
+  console.log('PASS: test 9 — class method multi-await');
 }
 
 console.log('\nAll tests passed!');

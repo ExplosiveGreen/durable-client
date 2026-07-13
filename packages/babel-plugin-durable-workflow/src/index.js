@@ -1,6 +1,4 @@
 const { declare } = require("@babel/helper-plugin-utils");
-const types = require("@babel/types");
-const template = require("@babel/template");
 
 function extractRetryConfig(t, node) {
   if (!t.isObjectExpression(node)) return t.identifier("undefined");
@@ -8,7 +6,16 @@ function extractRetryConfig(t, node) {
 }
 
 function getLeadingStepComment(path) {
-  const comments = path.node.leadingComments;
+  // Walk up the parent chain to find the nearest statement that may
+  // have a leading @step comment attached to it.
+  let target = path;
+  while (target && !target.isStatement()) {
+    target = target.parentPath;
+    if (!target || target.isFunction()) break;
+  }
+  if (!target) return null;
+
+  const comments = target.node.leadingComments;
   if (!comments) return null;
   for (const comment of comments) {
     const match = comment.value.match(/@step\s*\(\s*"([^"]+)"\s*\)/);
@@ -18,12 +25,13 @@ function getLeadingStepComment(path) {
 }
 
 function getFunctionName(path) {
-  const parent = path.parentPath;
-  if (parent.isObjectMethod() || parent.isClassMethod()) {
-    const className = parent.parentPath.isClassBody()
-      ? parent.parentPath.parentPath.get("id").node?.name || "AnonymousClass"
+  // Handle ClassMethod and ObjectMethod directly (path IS the method)
+  if (path.isClassMethod() || path.isObjectMethod()) {
+    const className = path.parentPath.isClassBody()
+      ? path.parentPath.parentPath.get("id").node?.name || "AnonymousClass"
       : null;
-    const methodName = parent.node.key.name || parent.node.key.value || "anonymous";
+    const methodName =
+      path.node.key.name || path.node.key.value || "anonymous";
     return className ? `${className}.${methodName}` : methodName;
   }
   if (path.isFunctionDeclaration() && path.get("id").node) {
@@ -34,6 +42,10 @@ function getFunctionName(path) {
     path.parentPath.isVariableDeclarator()
   ) {
     return path.parentPath.get("id").node?.name || "anonymous";
+  }
+  // Named function expression (e.g., async function foo() {})
+  if (path.isFunctionExpression() && path.node.id) {
+    return path.node.id.name;
   }
   return "anonymous";
 }
@@ -46,6 +58,8 @@ module.exports = declare((api) => {
     name: "babel-plugin-durable-workflow",
     visitor: {
       Program(programPath) {
+        let needsImport = false;
+
         programPath.traverse({
           "FunctionDeclaration|FunctionExpression|ArrowFunctionExpression|ClassMethod|ObjectMethod"(
             path
@@ -54,57 +68,93 @@ module.exports = declare((api) => {
             if (!bodyPath.isBlockStatement()) return;
 
             const decorators = path.node.decorators || [];
-            const workflowDecoratorIndex = decorators.findIndex(
-              (d) =>
+
+            // Find @workflow or @workflow(...) decorator
+            const workflowIdx = decorators.findIndex((d) => {
+              if (
                 t.isCallExpression(d.expression) &&
                 t.isIdentifier(d.expression.callee, { name: "workflow" })
-            );
-            if (workflowDecoratorIndex === -1) return;
+              ) {
+                return true;
+              }
+              if (t.isIdentifier(d.expression, { name: "workflow" })) {
+                return true;
+              }
+              return false;
+            });
 
-            const decoratorNode = decorators[workflowDecoratorIndex];
-            const retryConfig =
-              decoratorNode.expression.arguments.length > 0
-                ? extractRetryConfig(t, decoratorNode.expression.arguments[0])
-                : t.identifier("undefined");
+            if (workflowIdx === -1) return;
 
-            decorators.splice(workflowDecoratorIndex, 1);
-            path.node.decorators =
-              decorators.length > 0 ? decorators : null;
+            const decoratorNode = decorators[workflowIdx];
+
+            // Extract retry config from decorator arguments
+            let retryConfig;
+            if (t.isCallExpression(decoratorNode.expression)) {
+              retryConfig =
+                decoratorNode.expression.arguments.length > 0
+                  ? extractRetryConfig(t, decoratorNode.expression.arguments[0])
+                  : t.identifier("undefined");
+            } else {
+              // Bare @workflow (no parentheses, no arguments)
+              retryConfig = t.identifier("undefined");
+            }
+
+            // Remove the @workflow decorator from the AST
+            decorators.splice(workflowIdx, 1);
+            path.node.decorators = decorators.length > 0 ? decorators : null;
 
             const fnName = getFunctionName(path);
             let awaitIndex = 0;
 
             bodyPath.traverse({
               AwaitExpression(awaitPath) {
-                if (awaitPath.scope.getBinding("__step")) return;
+                // Skip if this await is inside any nested function.
+                // We compare against `path` (the current workflow function) —
+                // if findParent finds a function that is NOT the current
+                // workflow function, then the await is inside a nested function.
                 if (
                   awaitPath.findParent(
-                    (p) =>
-                      p.isFunction() &&
-                      p !== bodyPath &&
-                      !p.isArrowFunctionExpression()
+                    (p) => p.isFunction() && p !== path
                   )
                 )
                   return;
 
                 const explicitName = getLeadingStepComment(awaitPath);
-                const stepId = explicitName || `${fnName}:${awaitIndex}`;
+                const stepId = explicitName
+                  ? `${fnName}:${explicitName}`
+                  : `${fnName}:${awaitIndex}`;
                 awaitIndex++;
 
-                const arg = awaitPath.node.argument;
-                const stepCall = t.callExpression(
-                  t.identifier("__step"),
-                  [
+                awaitPath.replaceWith(
+                  t.callExpression(t.identifier("__step"), [
                     t.stringLiteral(stepId),
-                    t.arrowFunctionExpression([], arg),
+                    t.arrowFunctionExpression([], awaitPath.node.argument),
                     retryConfig,
-                  ]
+                  ])
                 );
-                awaitPath.replaceWith(stepCall);
               },
             });
+
+            if (awaitIndex > 0) {
+              needsImport = true;
+            }
           },
         });
+
+        if (needsImport) {
+          const importStmt = t.variableDeclaration("var", [
+            t.variableDeclarator(
+              t.identifier("__step"),
+              t.memberExpression(
+                t.callExpression(t.identifier("require"), [
+                  t.stringLiteral("@durable/runtime"),
+                ]),
+                t.identifier("__step")
+              )
+            ),
+          ]);
+          programPath.node.body.unshift(importStmt);
+        }
       },
     },
   };
