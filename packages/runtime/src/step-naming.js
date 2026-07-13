@@ -3,6 +3,6 @@
  * Supports explicit naming via optional override.
  */
 export function generateStepId(functionName, index, explicitName) {
-  if (explicitName) return explicitName;
+  if (explicitName !== undefined) return explicitName;
   return `${functionName}:${index}`;
 }
