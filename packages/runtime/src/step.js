@@ -10,10 +10,10 @@
  * @param {Array} [args] - Arguments to fn for cache key computation (optional)
  * @param {Object} [instance] - Workflow instance for key namespacing (optional)
  */
-import { stepStore } from "./storage.js";
-import { serialize, deserialize, toCacheKey } from "./serialize.js";
+const { stepStore } = require("./storage.js");
+const { serialize, deserialize, toCacheKey } = require("./serialize.js");
 
-export async function __step(stepId, fn, retryConfig, args, instance) {
+async function __step(stepId, fn, retryConfig, args, instance) {
   // Build cache key: stepId[:argHash][:instanceId]
   let cacheKey = stepId;
   if (args !== undefined) {
@@ -52,3 +52,5 @@ export async function __step(stepId, fn, retryConfig, args, instance) {
 
   throw lastError;
 }
+
+module.exports = { __step };

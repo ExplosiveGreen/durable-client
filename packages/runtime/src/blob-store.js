@@ -38,4 +38,6 @@ class InMemoryBlobStore {
   }
 }
 
-export const blobStore = new InMemoryBlobStore();
+const blobStore = new InMemoryBlobStore();
+
+module.exports = { blobStore };

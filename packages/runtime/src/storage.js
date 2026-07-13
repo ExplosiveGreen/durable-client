@@ -6,7 +6,7 @@
  * Custom adapters (IndexedDB, localStorage, OPFS, …) can extend it and be
  * swapped in without touching the rest of the runtime.
  */
-import { blobStore } from "./blob-store.js";
+const { blobStore } = require("./blob-store.js");
 
 /**
  * Pluggable storage interface.
@@ -23,7 +23,7 @@ import { blobStore } from "./blob-store.js";
  * The base implementation throws, so it both documents the contract and
  * serves as the extension point for custom adapters.
  */
-export class Storage {
+class Storage {
   get(_key) {
     throw new Error("Storage.get() not implemented");
   }
@@ -46,7 +46,7 @@ export class Storage {
  * Used directly when IndexedDB is unavailable, and as the reference
  * implementation / mock for tests.
  */
-export class InMemoryStore extends Storage {
+class InMemoryStore extends Storage {
   constructor() {
     super();
     this._map = new Map();
@@ -79,12 +79,14 @@ export class InMemoryStore extends Storage {
   }
 }
 
-export const stepStore = new InMemoryStore();
+const stepStore = new InMemoryStore();
 
 /**
  * Clear both the step store and the blob store.
  */
-export function clearAll() {
+function clearAll() {
   stepStore.clear();
   blobStore.clear();
 }
+
+module.exports = { Storage, InMemoryStore, stepStore, clearAll };

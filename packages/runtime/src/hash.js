@@ -2,7 +2,7 @@
  * SHA-256 hashing for cache keys and content addressing.
  */
 
-export async function sha256(input) {
+async function sha256(input) {
   if (typeof input === "string") {
     const encoder = new TextEncoder();
     const data = encoder.encode(input);
@@ -16,7 +16,7 @@ export async function sha256(input) {
   throw new Error("sha256: expected string or ArrayBuffer");
 }
 
-export function bufferToHex(buffer) {
+function bufferToHex(buffer) {
   const bytes = new Uint8Array(buffer);
   let hex = "";
   for (let i = 0; i < bytes.length; i++) {
@@ -24,3 +24,5 @@ export function bufferToHex(buffer) {
   }
   return hex;
 }
+
+module.exports = { sha256, bufferToHex };

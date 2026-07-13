@@ -2,10 +2,10 @@
  * Serialization module — walks value trees, replaces large binaries
  * with blob references, and produces deterministic string keys.
  */
-import { sha256 } from "./hash.js";
-import { blobStore } from "./blob-store.js";
+const { sha256 } = require("./hash.js");
+const { blobStore } = require("./blob-store.js");
 
-export async function serialize(value, visited = new WeakSet()) {
+async function serialize(value, visited = new WeakSet()) {
   if (value === null || value === undefined) return value;
   if (typeof value === "boolean" || typeof value === "number" || typeof value === "string") {
     return value;
@@ -95,7 +95,7 @@ export async function serialize(value, visited = new WeakSet()) {
   return value;
 }
 
-export function deserialize(value) {
+function deserialize(value) {
   if (value === null || value === undefined) return value;
   if (typeof value !== "object") return value;
   if (Array.isArray(value)) return value.map(deserialize);
@@ -141,7 +141,7 @@ export function deserialize(value) {
   return result;
 }
 
-export async function toCacheKey(stepId, args) {
+async function toCacheKey(stepId, args) {
   if (args === undefined) return stepId;
   const hash = await sha256(JSON.stringify(await serialize(args)));
   return `${stepId}:${hash}`;
@@ -150,6 +150,8 @@ export async function toCacheKey(stepId, args) {
 /**
  * SHA-256 of the serialized string form of a value (PLAN.md §1.3).
  */
-export async function hash(value) {
+async function hash(value) {
   return await sha256(JSON.stringify(await serialize(value)));
 }
+
+module.exports = { serialize, deserialize, toCacheKey, hash };

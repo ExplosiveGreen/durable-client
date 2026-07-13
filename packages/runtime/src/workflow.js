@@ -21,7 +21,7 @@
  * The config object (retries, baseDelay, etc.) is used by the Babel plugin
  * to populate the retry policy — the runtime decorator ignores it.
  */
-export function workflow(config) {
+function workflow(config) {
   // Return a no-op decorator.  The function signature matches the legacy
   // (stage 1) decorator proposal, which is what @babel/plugin-proposal-decorators
   // with `decoratorsBeforeExport: false` produces.
@@ -32,3 +32,5 @@ export function workflow(config) {
     return descriptor !== undefined ? descriptor : target;
   };
 }
+
+module.exports = { workflow };

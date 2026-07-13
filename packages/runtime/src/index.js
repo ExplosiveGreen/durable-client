@@ -4,11 +4,12 @@
  * The runtime core for durable client-side workflows.
  * Used in conjunction with babel-plugin-durable-workflow.
  */
-export { __step } from "./step.js";
-export { createInstance } from "./instance.js";
-export { generateStepId } from "./step-naming.js";
-export { serialize, deserialize, toCacheKey, hash } from "./serialize.js";
-export { Storage, InMemoryStore, stepStore, clearAll } from "./storage.js";
-export { blobStore } from "./blob-store.js";
-export { sha256 } from "./hash.js";
-export { workflow } from "./workflow.js";
+const { __step } = require("./step.js");
+const { createInstance } = require("./instance.js");
+const { generateStepId } = require("./step-naming.js");
+const { serialize, deserialize, toCacheKey, hash } = require("./serialize.js");
+const { Storage, InMemoryStore, stepStore, clearAll } = require("./storage.js");
+const { blobStore } = require("./blob-store.js");
+const { sha256 } = require("./hash.js");
+const { workflow } = require("./workflow.js");
+module.exports = { __step, createInstance, generateStepId, serialize, deserialize, toCacheKey, hash, Storage, InMemoryStore, stepStore, clearAll, blobStore, sha256, workflow };
