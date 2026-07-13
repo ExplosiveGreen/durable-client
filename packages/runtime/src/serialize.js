@@ -15,7 +15,7 @@ async function serialize(value, visited = new WeakSet()) {
 
   if (value instanceof Date) return { __t: "d", v: value.toISOString() };
 
-  if (value instanceof Blob || value instanceof File) {
+  if (typeof Blob !== "undefined" && (value instanceof Blob || value instanceof File)) {
     const isFile = value instanceof File;
     const arrayBuf = await value.arrayBuffer();
     const h = await sha256(arrayBuf);
@@ -121,6 +121,9 @@ function deserialize(value) {
   }
   if (value.__t === "b") return blobStore.get(value.h);
   if (value.__t === "f") {
+    if (typeof File === "undefined") {
+      throw new Error("Cannot deserialize File: File constructor is not available");
+    }
     const data = blobStore.get(value.h);
     return new File([data], value.m.name, {
       type: value.m.type,
@@ -128,6 +131,9 @@ function deserialize(value) {
     });
   }
   if (value.__t === "l") {
+    if (typeof Blob === "undefined") {
+      throw new Error("Cannot deserialize Blob: Blob constructor is not available");
+    }
     const data = blobStore.get(value.h);
     return new Blob([data], { type: value.m.type });
   }

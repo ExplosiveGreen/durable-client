@@ -141,6 +141,12 @@ module.exports = declare((api) => {
                   : `${fnName}:${awaitIndex}`;
                 awaitIndex++;
 
+                // Extract arguments from the awaited call expression for cache key
+                // computation: __step(stepId, fn, retryConfig, args)
+                const callArgs = t.isCallExpression(awaitPath.node.argument)
+                  ? t.arrayExpression(awaitPath.node.argument.arguments)
+                  : t.identifier("undefined");
+
                 // Wrap __step() in an AwaitExpression to preserve the `await` keyword.
                 // Replacing the original AwaitExpression with just a CallExpression would
                 // lose the `await` keyword, making __step run synchronously.
@@ -150,6 +156,7 @@ module.exports = declare((api) => {
                       t.stringLiteral(stepId),
                       t.arrowFunctionExpression([], awaitPath.node.argument),
                       retryConfig,
+                      callArgs,
                     ])
                   )
                 );
