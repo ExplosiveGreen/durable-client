@@ -1,7 +1,9 @@
 const { declare } = require("@babel/helper-plugin-utils");
 
-function extractRetryConfig(t, node) {
-  if (!t.isObjectExpression(node)) return t.identifier("undefined");
+function extractRetryConfig(node) {
+  // Pass through any expression argument — runtime validates the config shape.
+  // Returns `undefined` only when there is no argument.
+  if (!node) return null;
   return node;
 }
 
@@ -87,27 +89,41 @@ module.exports = declare((api) => {
 
             const decoratorNode = decorators[workflowIdx];
 
+            // Always strip the @workflow decorator — it's not valid in output
+            decorators.splice(workflowIdx, 1);
+            path.node.decorators = decorators.length > 0 ? decorators : null;
+
+            // Only transform awaits inside async functions
+            if (!path.node.async) return;
+
             // Extract retry config from decorator arguments
             let retryConfig;
             if (t.isCallExpression(decoratorNode.expression)) {
               retryConfig =
                 decoratorNode.expression.arguments.length > 0
-                  ? extractRetryConfig(t, decoratorNode.expression.arguments[0])
+                  ? extractRetryConfig(decoratorNode.expression.arguments[0])
                   : t.identifier("undefined");
             } else {
               // Bare @workflow (no parentheses, no arguments)
               retryConfig = t.identifier("undefined");
             }
 
-            // Remove the @workflow decorator from the AST
-            decorators.splice(workflowIdx, 1);
-            path.node.decorators = decorators.length > 0 ? decorators : null;
-
             const fnName = getFunctionName(path);
             let awaitIndex = 0;
 
             bodyPath.traverse({
               AwaitExpression(awaitPath) {
+                // Skip already-transformed __step() calls to prevent
+                // infinite recursion when we replace this AwaitExpression
+                // with a new one (t.awaitExpression creates a new node
+                // that gets visited by this same handler).
+                if (
+                  t.isCallExpression(awaitPath.node.argument) &&
+                  t.isIdentifier(awaitPath.node.argument.callee, { name: "__step" })
+                ) {
+                  return;
+                }
+
                 // Skip if this await is inside any nested function.
                 // We compare against `path` (the current workflow function) —
                 // if findParent finds a function that is NOT the current
@@ -125,12 +141,17 @@ module.exports = declare((api) => {
                   : `${fnName}:${awaitIndex}`;
                 awaitIndex++;
 
+                // Wrap __step() in an AwaitExpression to preserve the `await` keyword.
+                // Replacing the original AwaitExpression with just a CallExpression would
+                // lose the `await` keyword, making __step run synchronously.
                 awaitPath.replaceWith(
-                  t.callExpression(t.identifier("__step"), [
-                    t.stringLiteral(stepId),
-                    t.arrowFunctionExpression([], awaitPath.node.argument),
-                    retryConfig,
-                  ])
+                  t.awaitExpression(
+                    t.callExpression(t.identifier("__step"), [
+                      t.stringLiteral(stepId),
+                      t.arrowFunctionExpression([], awaitPath.node.argument),
+                      retryConfig,
+                    ])
+                  )
                 );
               },
             });
@@ -142,7 +163,7 @@ module.exports = declare((api) => {
         });
 
         if (needsImport) {
-          const importStmt = t.variableDeclaration("var", [
+          const importStmt = t.variableDeclaration("const", [
             t.variableDeclarator(
               t.identifier("__step"),
               t.memberExpression(

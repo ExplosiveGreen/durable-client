@@ -242,4 +242,135 @@ class Workers {
   console.log('PASS: test 9 — class method multi-await');
 }
 
+// Test 10: Sync function with @workflow should NOT be transformed
+{
+  const input = `
+class Workflows {
+  @workflow({ retries: 3 })
+  syncMethod() {
+    const a = step1();
+    return step2(a);
+  }
+}
+`;
+  const output = transform(input);
+  assert(
+    !output.includes('__step'),
+    'Should NOT add __step for sync function'
+  );
+  assert(
+    !output.includes('@workflow'),
+    'Should still strip decorator from sync function'
+  );
+  console.log('PASS: test 10 — sync function with @workflow not transformed');
+}
+
+// Test 11: Multiple @workflow methods in one file — single import injected
+{
+  const input = `
+class Workflows {
+  @workflow({ retries: 3 })
+  async first() {
+    await a();
+  }
+
+  @workflow({ retries: 1 })
+  async second() {
+    await b();
+  }
+}
+`;
+  const output = transform(input);
+  // Should have exactly one __step import (const declaration)
+  const importMatches = output.match(/const __step = /g);
+  assert(
+    importMatches && importMatches.length === 1,
+    'Should inject exactly one __step import for multiple workflow methods'
+  );
+  assert(
+    output.includes('__step("Workflows.first:0"'),
+    'Should transform first method'
+  );
+  assert(
+    output.includes('__step("Workflows.second:0"'),
+    'Should transform second method'
+  );
+  assert(
+    !output.includes('@workflow'),
+    'Should strip all decorators'
+  );
+  console.log('PASS: test 11 — multiple @workflow methods, single import');
+}
+
+// Test 12: Verify import uses const and correct module path
+{
+  const input = `
+class Workflows {
+  @workflow
+  async task() {
+    await doWork();
+  }
+}
+`;
+  const output = transform(input);
+  assert(
+    output.includes('const __step = require("@durable/runtime").__step'),
+    'Should use const and require @durable/runtime'
+  );
+  console.log('PASS: test 12 — import uses const and correct module');
+}
+
+// Test 13: @workflow method alongside non-workflow method — non-workflow untouched
+{
+  const input = `
+class Workflows {
+  @workflow({ retries: 2 })
+  async workflowMethod() {
+    return await process();
+  }
+
+  async normalMethod() {
+    return await helper();
+  }
+}
+`;
+  const output = transform(input);
+  assert(
+    output.includes('__step("Workflows.workflowMethod:0"'),
+    'Should transform workflow method'
+  );
+  assert(
+    output.includes('await helper()'),
+    'Should NOT transform non-workflow method'
+  );
+  assert(
+    !output.includes('__step("Workflows.normalMethod:0"'),
+    'Non-workflow method should not have __step'
+  );
+  console.log('PASS: test 13 — non-workflow method left untouched');
+}
+
+// Test 14: Verify await keyword is preserved before __step() calls
+{
+  const input = `
+class Workflows {
+  @workflow({ retries: 1 })
+  async myMethod() {
+    const r = await doWork();
+    return await finish(r);
+  }
+}
+`;
+  const output = transform(input);
+  assert(
+    output.includes('await __step("Workflows.myMethod:0"'),
+    'First __step call must be prefixed with await keyword'
+  );
+  assert(
+    output.includes('await __step("Workflows.myMethod:1"'),
+    'Second __step call must be prefixed with await keyword'
+  );
+  console.log('PASS: test 14 — await keyword preserved before __step calls');
+}
+
 console.log('\nAll tests passed!');

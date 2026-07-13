@@ -5,7 +5,6 @@
   "main": "src/index.js",
   "dependencies": {
     "@babel/helper-plugin-utils": "^7.24.0",
-    "@babel/template": "^7.24.0",
     "@babel/types": "^7.24.0"
   },
   "peerDependencies": {
