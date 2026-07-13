@@ -10,7 +10,10 @@ class InMemoryBlobStore {
   }
 
   get(hash) {
-    return this._map.get(hash) || null;
+    if (this._map.has(hash)) {
+      return this._map.get(hash);
+    }
+    return null;
   }
 
   set(hash, data) {

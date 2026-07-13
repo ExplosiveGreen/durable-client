@@ -25,25 +25,41 @@ export async function serialize(value, visited = new WeakSet()) {
   }
 
   if (value instanceof ArrayBuffer || ArrayBuffer.isView(value)) {
-    const arrayBuf = value instanceof ArrayBuffer ? value : value.buffer;
+    // For TypedArray/DataView, copy only the bytes actually covered by the
+    // view (byteOffset..byteOffset+byteLength) rather than the whole buffer,
+    // which may be a larger shared ArrayBuffer.
+    const arrayBuf =
+      value instanceof ArrayBuffer
+        ? value
+        : value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength);
     const h = await sha256(arrayBuf);
     blobStore.set(h, arrayBuf);
     return { __t: "b", h };
   }
 
   if (value instanceof Map) {
+    if (visited.has(value)) {
+      throw new Error("Circular reference detected during serialization");
+    }
+    visited.add(value);
     const entries = [];
     for (const [k, v] of value) {
       entries.push([await serialize(k, visited), await serialize(v, visited)]);
     }
+    visited.delete(value);
     return { __t: "m", v: entries };
   }
 
   if (value instanceof Set) {
+    if (visited.has(value)) {
+      throw new Error("Circular reference detected during serialization");
+    }
+    visited.add(value);
     const arr = [];
     for (const v of value) {
       arr.push(await serialize(v, visited));
     }
+    visited.delete(value);
     return { __t: "s", v: arr };
   }
 
@@ -91,8 +107,15 @@ export function deserialize(value) {
     return match ? new RegExp(match[1], match[2]) : value.v;
   }
   if (value.__t === "e") {
-    const err = new Error(value.v.message);
-    err.name = value.v.name;
+    const name = value.v.name;
+    // Reconstruct the original error subclass when available (TypeError,
+    // RangeError, etc.), falling back to a plain Error.
+    const Ctor =
+      typeof globalThis[name] === "function" && /Error$/.test(name)
+        ? globalThis[name]
+        : Error;
+    const err = new Ctor(value.v.message);
+    err.name = name;
     err.stack = value.v.stack;
     return err;
   }
@@ -113,4 +136,11 @@ export async function toCacheKey(stepId, args) {
   if (args === undefined) return stepId;
   const hash = await sha256(JSON.stringify(await serialize(args)));
   return `${stepId}:${hash}`;
+}
+
+/**
+ * SHA-256 of the serialized string form of a value (PLAN.md §1.3).
+ */
+export async function hash(value) {
+  return sha256(JSON.stringify(await serialize(value)));
 }
