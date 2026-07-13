@@ -1,0 +1,13 @@
+{
+  "name": "babel-plugin-durable-workflow",
+  "version": "0.1.0",
+  "description": "Babel plugin that transforms @workflow decorated functions into durable steps",
+  "main": "src/index.js",
+  "license": "MIT",
+  "peerDependencies": {
+    "@babel/core": "^7.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.29.7"
+  }
+}
