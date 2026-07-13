@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Durable Client Workflows &mdash; Plan</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0d1117;
+    color: #e1e4e8;
+    padding: 1.5rem;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+
+  /* === Hero === */
+  .hero {
+    background: linear-gradient(135deg, #161b22 0%, #1c2333 100%);
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  .hero h1 { font-size: 1.6rem; color: #f0f6fc; margin-bottom: 0.5rem; }
+  .hero p { color: #8b949e; font-size: 0.9rem; max-width: 600px; margin: 0 auto; }
+
+  /* === Section === */
+  .section { margin-bottom: 2rem; }
+  .section-title {
+    font-size: 1.1rem; color: #f0f6fc;
+    border-bottom: 1px solid #30363d;
+    padding-bottom: 0.4rem;
+    margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+
+  /* === Cards === */
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.8rem; }
+  .card {
+    background: #1c2128;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+  .card h4 { color: #79c0ff; font-size: 0.9rem; margin-bottom: 0.4rem; }
+  .card p, .card li { font-size: 0.82rem; color: #c9d1d9; line-height: 1.5; }
+  .card ul { padding-left: 1.2rem; margin: 0.3rem 0; }
+  .card li { font-size: 0.82rem; margin: 0.15rem 0; }
+
+  /* === Phase bar === */
+  .phase-bar {
+    display: flex; gap: 0.4rem; margin: 1.5rem 0; flex-wrap: wrap;
+  }
+  .phase-pill {
+    padding: 0.3rem 0.7rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid;
+  }
+  .phase-pill.active { background: #1f6feb22; border-color: #1f6feb; color: #58a6ff; }
+  .phase-pill.future { background: #161b22; border-color: #30363d; color: #8b949e; }
+
+  /* === Architecture SVG === */
+  .arch-wrap {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    padding: 1.2rem;
+    margin: 1.2rem 0;
+    text-align: center;
+    overflow-x: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .arch-wrap svg { width: 100%; height: auto; display: block; }
+
+  /* === Flow diagram === */
+  .flow-wrap {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    padding: 1.2rem;
+    margin: 1.2rem 0;
+    text-align: center;
+    overflow-x: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .flow-wrap svg { width: 100%; height: auto; display: block; }
+
+  /* === Phase row === */
+  .phase-row {
+    display: flex; gap: 0.5rem; margin: 1.2rem 0; flex-wrap: wrap;
+  }
+  .phase-step {
+    flex: 1; min-width: 100px;
+    background: #1c2128;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 0.7rem;
+    text-align: center;
+  }
+  .phase-step .num {
+    display: inline-block;
+    background: #1f6feb;
+    color: #fff;
+    width: 22px; height: 22px;
+    line-height: 22px;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+  }
+  .phase-step .label { font-size: 0.75rem; color: #c9d1d9; }
+  .phase-step .desc { font-size: 0.65rem; color: #8b949e; margin-top: 0.2rem; }
+
+  /* === Retry table === */
+  .retry-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.6rem; margin: 0.8rem 0;
+  }
+  .retry-card {
+    background: #1c2128;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 0.7rem;
+    text-align: center;
+  }
+  .retry-card .name { font-size: 0.8rem; color: #79c0ff; font-weight: 600; }
+  .retry-card .detail { font-size: 0.7rem; color: #8b949e; margin-top: 0.2rem; }
+
+  /* === Step flow === */
+  .step-flow {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0.3rem; margin: 1rem 0; flex-wrap: wrap;
+  }
+  .step-box {
+    background: #1c2128;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.75rem;
+    text-align: center;
+    min-width: 70px;
+  }
+  .step-box .id { color: #58a6ff; font-weight: 600; font-size: 0.7rem; }
+  .step-box .action { color: #c9d1d9; font-size: 0.65rem; margin-top: 0.15rem; }
+  .step-box.sync { border-color: #3fb950; }
+  .step-box.sync .id { color: #3fb950; }
+  .step-box.async { border-color: #d29922; }
+  .step-box.async .id { color: #d29922; }
+  .step-arrow { color: #30363d; font-size: 1.2rem; }
+
+  /* === Storage diagram === */
+  .store-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin: 0.8rem 0;
+  }
+  .store-box {
+    background: #1c2128;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 0.7rem;
+    text-align: center;
+  }
+  .store-box .title { font-size: 0.8rem; color: #79c0ff; font-weight: 600; }
+  .store-box .key { font-size: 0.65rem; color: #8b949e; margin-top: 0.2rem; font-family: monospace; }
+  .store-box .val { font-size: 0.65rem; color: #3fb950; margin-top: 0.1rem; font-family: monospace; }
+
+  /* === Instance isolation === */
+  .instance-wrap {
+    background: #1c2128;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 0.8rem 0;
+    text-align: center;
+  }
+  .instance-row { display: flex; justify-content: center; gap: 1.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
+  .instance-call {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.7rem;
+  }
+  .instance-call .call-id { color: #d29922; font-family: monospace; }
+  .instance-call .ns { color: #58a6ff; font-family: monospace; font-size: 0.65rem; display: block; margin-top: 0.15rem; }
+
+  /* === Key format === */
+  .key-demo {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 0.6rem 1rem;
+    font-family: monospace;
+    font-size: 0.75rem;
+    text-align: center;
+    margin: 0.6rem 0;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .key-demo .step { color: #d29922; }
+  .key-demo .sep { color: #30363d; }
+  .key-demo .hash { color: #58a6ff; }
+
+  /* === Serialization tree === */
+  .ser-tree {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 0.8rem;
+    font-family: monospace;
+    font-size: 0.7rem;
+    line-height: 1.7;
+    margin: 0.6rem 0;
+  }
+  .ser-tree .prim { color: #79c0ff; }
+  .ser-tree .type { color: #d29922; }
+  .ser-tree .ref  { color: #3fb950; }
+  .ser-tree .arrow { color: #30363d; }
+
+  /* === Instance isolation === */
+  .inst-row {
+    display: flex; justify-content: center; gap: 1rem; margin: 0.8rem 0; flex-wrap: wrap;
+  }
+  .inst-call {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 0.6rem 0.8rem;
+    text-align: center;
+  }
+  .inst-call .call-label { font-size: 0.7rem; color: #8b949e; }
+  .inst-call .uuid { font-size: 0.65rem; color: #d29922; font-family: monospace; }
+  .inst-call .key-preview { font-size: 0.6rem; color: #58a6ff; font-family: monospace; margin-top: 0.15rem; }
+
+  /* === Phase progression === */
+  .prog-row {
+    display: flex; gap: 0.3rem; margin: 1rem 0; flex-wrap: wrap;
+  }
+  .prog-item {
+    flex: 1; min-width: 80px;
+    padding: 0.5rem;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 0.7rem;
+    text-decoration: none;
+    transition: transform 0.15s, box-shadow 0.15s;
+    display: block;
+  }
+  .prog-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+  .prog-item:active { transform: translateY(0); }
+  .prog-item.done { background: #1f6feb22; border: 1px solid #1f6feb; color: #58a6ff; }
+  .prog-item.next { background: #3fb95022; border: 1px solid #3fb950; color: #3fb950; }
+  .prog-item.future { background: #1c2128; border: 1px solid #30363d; color: #8b949e; }
+
+  /* === Legend === */
+  .legend { display: flex; gap: 1rem; justify-content: center; margin: 0.5rem 0; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 0.3rem; font-size: 0.7rem; color: #8b949e; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+  /* === Section label === */
+  .section-label {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+  }
+  .section-label.compiler { background: #1f6ebf33; color: #58a6ff; }
+  .section-label.runtime { background: #3fb95033; color: #3fb950; }
+  .section-label.storage { background: #d2992233; color: #d29922; }
+
+  html { scroll-behavior: smooth; }
+
+  /* === Responsive === */
+  @media (max-width: 600px) {
+    body { padding: 0.5rem; }
+    .container { padding: 0.5rem; }
+    .card-grid { grid-template-columns: 1fr; }
+    .store-grid { grid-template-columns: 1fr; }
+    .phase-row { flex-direction: column; }
+    .prog-row { flex-direction: column; }
+    .hero { padding: 1rem; }
+    .arch-wrap, .flow-wrap { padding: 0.6rem; margin: 0.8rem 0; }
+    .arch-wrap svg, .flow-wrap svg { max-width: none; width: 520px; }
+    .retry-grid { grid-template-columns: 1fr 1fr; }
+    .key-demo { font-size: 0.6rem; }
+    .ser-tree { overflow-x: auto; }
+    .inst-row { flex-direction: column; align-items: center; }
+    .instance-row { flex-direction: column; align-items: center; }
+    code { word-break: break-all; }
+    .prog-item { min-width: 0; }
+    .hero h1 { font-size: 1.1rem; }
+    .hero p { font-size: 0.8rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ====== HERO ====== -->
+<div class="hero" style="background:linear-gradient(135deg,#161b22,#1c2333);border:1px solid #30363d;border-radius:12px;padding:1.5rem;text-align:center;margin-bottom:1.5rem;">
+  <h1 style="color:#f0f6fc;font-size:1.4rem;">Durable Client-Side Workflows</h1>
+  <p style="color:#8b949e;font-size:0.85rem;margin-top:0.3rem;">Write normal async code &mdash; get retry policies + step-level durability automatically</p>
+</div>
+
+<!-- ====== ARCHITECTURE ====== -->
+<div class="section" id="architecture">
+  <div class="section-label compiler">Architecture</div>
+  <div class="arch-wrap">
+    <svg viewBox="0 0 700 240" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10 Z" fill="#30363d"/>
+        </marker>
+      </defs>
+
+      <!-- Source code -->
+      <rect x="10" y="60" width="140" height="80" rx="8" fill="#1c2128" stroke="#d29922" stroke-width="1.5"/>
+      <text x="80" y="90" text-anchor="middle" fill="#d29922" font-size="10" font-weight="600">Source Code</text>
+      <text x="80" y="108" text-anchor="middle" fill="#8b949e" font-size="7">@workflow({...})</text>
+      <text x="80" y="122" text-anchor="middle" fill="#8b949e" font-size="7">async importFile()</text>
+
+      <!-- Arrow -->
+      <line x1="150" y1="100" x2="190" y2="100" stroke="#30363d" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <!-- Babel plugin -->
+      <rect x="195" y="50" width="140" height="100" rx="8" fill="#1c2128" stroke="#1f6ebf" stroke-width="1.5"/>
+      <text x="265" y="78" text-anchor="middle" fill="#58a6ff" font-size="9" font-weight="600">Babel Plugin</text>
+      <text x="265" y="95" text-anchor="middle" fill="#8b949e" font-size="7">Finds await expressions</text>
+      <text x="265" y="110" text-anchor="middle" fill="#8b949e" font-size="7">Wraps with __step()</text>
+      <text x="265" y="125" text-anchor="middle" fill="#8b949e" font-size="7">Strips @workflow</text>
+      <text x="265" y="140" text-anchor="middle" fill="#8b949e" font-size="7">Outputs plain JS</text>
+
+      <!-- Arrow -->
+      <line x1="335" y1="100" x2="375" y2="100" stroke="#30363d" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <!-- Output -->
+      <rect x="380" y="55" width="150" height="90" rx="8" fill="#1c2128" stroke="#3fb950" stroke-width="1.5"/>
+      <text x="455" y="82" text-anchor="middle" fill="#3fb950" font-size="9" font-weight="600">Plain JS Output</text>
+      <text x="455" y="100" text-anchor="middle" fill="#8b949e" font-size="7">await __step("1",</text>
+      <text x="455" y="114" text-anchor="middle" fill="#8b949e" font-size="7">  () =&gt; readFile(f),</text>
+      <text x="455" y="128" text-anchor="middle" fill="#8b949e" font-size="7">  retryConfig)</text>
+      <text x="455" y="142" text-anchor="middle" fill="#8b949e" font-size="7">Works in &lt;script&gt; tags</text>
+
+      <!-- Runtime box below -->
+      <rect x="195" y="170" width="335" height="55" rx="8" fill="#1c2128" stroke="#d29922" stroke-width="1.5" stroke-dasharray="4"/>
+      <text x="362" y="193" text-anchor="middle" fill="#d29922" font-size="9" font-weight="600">Runtime (@durable/runtime)</text>
+      <text x="362" y="210" text-anchor="middle" fill="#8b949e" font-size="7">__step() &bull; Retry Engine &bull; Serializer &bull; IndexedDB Storage</text>
+
+      <!-- Arrow from output down to runtime -->
+      <line x1="455" y1="145" x2="455" y2="170" stroke="#30363d" stroke-width="1" stroke-dasharray="3" marker-end="url(#arrow)"/>
+    </svg>
+  </div>
+</div>
+
+<!-- ====== PHASES OVERVIEW ====== -->
+<div class="section">
+  <div class="section-label compiler">Roadmap</div>
+  <div class="prog-row">
+    <a href="#phase-1" class="prog-item done"><strong>1</strong><br><span style="font-size:0.6rem;">Compiler + Runtime</span></a>
+    <a href="#phase-2" class="prog-item future"><strong>2</strong><br><span style="font-size:0.6rem;">Resilience</span></a>
+    <a href="#phase-3" class="prog-item future"><strong>3</strong><br><span style="font-size:0.6rem;">Dev Experience</span></a>
+    <a href="#phase-4" class="prog-item future"><strong>4</strong><br><span style="font-size:0.6rem;">Advanced</span></a>
+    <a href="#phase-5" class="prog-item future"><strong>5</strong><br><span style="font-size:0.6rem;">Tooling</span></a>
+    <a href="#phase-6" class="prog-item future"><strong>6</strong><br><span style="font-size:0.6rem;">Hardening</span></a>
+    <a href="#phase-7" class="prog-item future"><strong>7</strong><br><span style="font-size:0.6rem;">Ecosystem</span></a>
+  </div>
+</div>
+
+<!-- ====== PHASE 1 DETAIL ====== -->
+<div class="section" id="phase-1">
+  <div class="section-label compiler">Phase 1 &mdash; Compiler</div>
+
+  <h3 style="color:#79c0ff;font-size:0.9rem;margin-bottom:0.5rem;">Babel Plugin</h3>
+  <div class="card-grid">
+    <div class="card">
+      <h4>Class Methods</h4>
+      <p><code>@workflow</code> on class methods &rarr; step IDs: <code>ClassName.methodName:N</code></p>
+    </div>
+    <div class="card">
+      <h4>Standalone Functions</h4>
+      <p><code>@workflow</code> on async function declarations &amp; expressions &rarr; step IDs: <code>functionName:N</code></p>
+    </div>
+    <div class="card">
+      <h4>Auto-Detection</h4>
+      <p>Finds all <code>AwaitExpression</code> nodes. No annotations needed. <code>// @step("name")</code> comment is fallback for explicit naming.</p>
+    </div>
+    <div class="card">
+      <h4>Transformation</h4>
+      <p><code>await &lt;expr&gt;</code> &rarr; <code>await __step("id", () =&gt; &lt;expr&gt;, config)</code>. Sync code is left untouched.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ====== STEP TRANSFORMATION VISUAL ====== -->
+<div class="section" id="step-transformation">
+  <div class="section-label compiler">Step Transformation</div>
+  <div class="flow-wrap">
+    <svg viewBox="0 0 680 145" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+          <path d="M0,0 L10,5 L0,10 Z" fill="#30363d"/>
+        </marker>
+      </defs>
+
+      <!-- Before -->
+      <rect x="5" y="10" width="300" height="100" rx="8" fill="#1c2128" stroke="#d29922" stroke-width="1"/>
+      <text x="155" y="30" text-anchor="middle" fill="#d29922" font-size="8" font-weight="600">Before (user writes)</text>
+      <text x="20" y="50" fill="#8b949e" font-size="7" font-family="monospace">const text = await readFile(file);</text>
+      <text x="20" y="66" fill="#8b949e" font-size="7" font-family="monospace">const records = await parse(text);</text>
+      <text x="20" y="82" fill="#3fb950" font-size="7" font-family="monospace">const index = createIndex(records);</text>
+      <text x="20" y="98" fill="#8b949e" font-size="7" font-family="monospace">await saveToStorage(compressed);</text>
+
+      <!-- Arrow -->
+      <line x1="310" y1="60" x2="340" y2="60" stroke="#30363d" stroke-width="1.5" marker-end="url(#a2)"/>
+
+      <!-- After -->
+      <rect x="350" y="10" width="320" height="100" rx="8" fill="#1c2128" stroke="#3fb950" stroke-width="1"/>
+      <text x="510" y="30" text-anchor="middle" fill="#3fb950" font-size="8" font-weight="600">After (compiled)</text>
+      <text x="365" y="50" fill="#d29922" font-size="7" font-family="monospace">await __step("f:1", () =&gt; readFile(f), cfg);</text>
+      <text x="365" y="66" fill="#d29922" font-size="7" font-family="monospace">await __step("f:2", () =&gt; parse(text), cfg);</text>
+      <text x="365" y="82" fill="#3fb950" font-size="7" font-family="monospace">const index = createIndex(records);</text>
+      <text x="365" y="98" fill="#d29922" font-size="7" font-family="monospace">await __step("f:3", () =&gt; save(c), cfg);</text>
+
+      <!-- Legend -->
+      <rect x="365" y="118" width="8" height="8" rx="2" fill="#d29922"/>
+      <text x="377" y="126" fill="#8b949e" font-size="6">Durable step</text>
+      <rect x="440" y="118" width="8" height="8" rx="2" fill="#3fb950"/>
+      <text x="452" y="126" fill="#8b949e" font-size="6">Sync (unchanged)</text>
+    </svg>
+  </div>
+</div>
+
+<!-- ====== RETRY POLICIES ====== -->
+<div class="section" id="retry-policies">
+  <div class="section-label runtime">Retry Policies</div>
+  <div class="retry-grid">
+    <div class="retry-card">
+      <div class="name">none</div>
+      <div class="detail">Execute once, no retry</div>
+    </div>
+    <div class="retry-card">
+      <div class="name">fixed</div>
+      <div class="detail">Retry N times, fixed delay</div>
+    </div>
+    <div class="retry-card">
+      <div class="name">exponential</div>
+      <div class="detail">delay = min(initial &times; multiplier<sup>attempt</sup>, maxDelay)</div>
+    </div>
+    <div class="retry-card">
+      <div class="name">jitter</div>
+      <div class="detail">Optional &plusmn;25% randomization on delay</div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== __step FLOW ====== -->
+<div class="section" id="step-flow">
+  <div class="section-label runtime">__step() Execution Flow</div>
+  <div class="flow-wrap">
+    <svg viewBox="0 0 720 160" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+          <path d="M0,0 L10,5 L0,10 Z" fill="#30363d"/>
+        </marker>
+      </defs>
+
+      <!-- Start -->
+      <rect x="10" y="55" width="100" height="30" rx="15" fill="#1c2128" stroke="#58a6ff" stroke-width="1.5"/>
+      <text x="60" y="74" text-anchor="middle" fill="#58a6ff" font-size="8" font-weight="600">__step() called</text>
+
+      <line x1="110" y1="70" x2="140" y2="70" stroke="#30363d" stroke-width="1.5" marker-end="url(#a3)"/>
+
+      <!-- Serialize args -->
+      <rect x="145" y="10" width="120" height="30" rx="6" fill="#1c2128" stroke="#d29922" stroke-width="1"/>
+      <text x="205" y="29" text-anchor="middle" fill="#d29922" font-size="7">Serialize args</text>
+
+      <line x1="265" y1="25" x2="295" y2="25" stroke="#30363d" stroke-width="1.5" marker-end="url(#a3)"/>
+
+      <!-- Hash -->
+      <rect x="300" y="10" width="100" height="30" rx="6" fill="#1c2128" stroke="#d29922" stroke-width="1"/>
+      <text x="350" y="29" text-anchor="middle" fill="#d29922" font-size="7">SHA-256 hash</text>
+
+      <line x1="400" y1="25" x2="430" y2="25" stroke="#30363d" stroke-width="1.5" marker-end="url(#a3)"/>
+
+      <!-- Check storage -->
+      <rect x="435" y="10" width="120" height="30" rx="6" fill="#1c2128" stroke="#58a6ff" stroke-width="1"/>
+      <text x="495" y="29" text-anchor="middle" fill="#58a6ff" font-size="7">Check storage</text>
+
+      <!-- Branch: cache hit -->
+      <line x1="495" y1="40" x2="495" y2="65" stroke="#3fb950" stroke-width="1" marker-end="url(#a3)"/>
+      <rect x="440" y="68" width="110" height="25" rx="6" fill="#1c2128" stroke="#3fb950" stroke-width="1"/>
+      <text x="495" y="84" text-anchor="middle" fill="#3fb950" font-size="7">Cache hit &rarr; return</text>
+
+      <!-- Branch: cache miss -->
+      <line x1="555" y1="25" x2="580" y2="25" stroke="#d29922" stroke-width="1" marker-end="url(#a3)"/>
+      <rect x="585" y="10" width="90" height="30" rx="6" fill="#1c2128" stroke="#d29922" stroke-width="1"/>
+      <text x="630" y="29" text-anchor="middle" fill="#d29922" font-size="7">Execute with retry</text>
+
+      <line x1="630" y1="40" x2="630" y2="68" stroke="#d29922" stroke-width="1" marker-end="url(#a3)"/>
+
+      <rect x="575" y="70" width="110" height="25" rx="6" fill="#1c2128" stroke="#3fb950" stroke-width="1"/>
+      <text x="630" y="86" text-anchor="middle" fill="#3fb950" font-size="7">Store result</text>
+
+      <line x1="575" y1="82" x2="555" y2="82" stroke="#30363d" stroke-width="1" marker-end="url(#a3)"/>
+    </svg>
+  </div>
+</div>
+
+<!-- ====== CACHE KEY ====== -->
+<div class="section" id="cache-key">
+  <div class="section-label storage">Cache Key</div>
+  <div class="key-demo">
+    <span class="step">importFile:1</span><span class="sep">:</span><span class="hash">a1b2c3d4e5f67890abcdef1234567890abcdef1234567890abcdef1234567890</span>
+  </div>
+  <div class="card-grid">
+    <div class="card">
+      <h4>Format</h4>
+      <p><code>stepId:sha256(serialize(args))</code></p>
+    </div>
+    <div class="card">
+      <h4>Arg-Dependent</h4>
+      <p>Same args = same hash = cache hit. Different args = different hash = new execution.</p>
+    </div>
+    <div class="card">
+      <h4>Compact</h4>
+      <p>Large objects (File, Blob) are content-addressed first, so the key is always a short hash.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ====== SERIALIZATION ====== -->
+<div class="section" id="serialization">
+  <div class="section-label storage">Serialization</div>
+  <div class="store-grid">
+    <div class="store-box">
+      <div class="title">Primitives</div>
+      <div class="key">string, number, boolean</div>
+      <div class="val">Included directly</div>
+    </div>
+    <div class="store-box">
+      <div class="title">Date</div>
+      <div class="key">{ __t: "d", v: ISO string }</div>
+    </div>
+    <div class="store-box">
+      <div class="title">File / Blob</div>
+      <div class="key">ArrayBuffer &rarr; SHA-256</div>
+      <div class="val">Stored in blob store, replaced with { __blobRef }</div>
+    </div>
+    <div class="store-box">
+      <div class="title">ArrayBuffer / TypedArray</div>
+      <div class="key">SHA-256 &rarr; blob store</div>
+      <div class="val">{ __t: "b", h: "&lt;sha256&gt;" }</div>
+    </div>
+    <div class="store-box">
+      <div class="title">Map / Set</div>
+      <div class="key">{ __t: "m"|"s", v: [...] }</div>
+    </div>
+    <div class="store-box">
+      <div class="title">RegExp / Error</div>
+      <div class="key">{ __t: "r"|"e", v: ... }</div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== STORAGE LAYER ====== -->
+<div class="section" id="storage-layer">
+  <div class="section-label storage">Storage Layer</div>
+  <div class="store-grid">
+    <div class="store-box">
+      <div class="title">steps store</div>
+      <div class="key">stepId:argHash</div>
+      <div class="val">&rarr; serialized result</div>
+    </div>
+    <div class="store-box">
+      <div class="title">blobs store</div>
+      <div class="key">sha256 hash</div>
+      <div class="val">&rarr; ArrayBuffer</div>
+    </div>
+  </div>
+  <p style="font-size:0.75rem;color:#8b949e;text-align:center;margin-top:0.3rem;">Single IndexedDB database, two object stores &bull; In-memory fallback</p>
+</div>
+
+<!-- ====== INSTANCE ISOLATION ====== -->
+<div class="section" id="instance-isolation">
+  <div class="section-label runtime">Instance Isolation</div>
+  <div class="inst-row">
+    <div class="inst-call">
+      <div class="call-label">Call 1</div>
+      <div class="uuid">uuid-a1b2...</div>
+      <div class="key-preview">a1b2:importFile:1:hash</div>
+    </div>
+    <div class="inst-call">
+      <div class="call-label">Call 2</div>
+      <div class="uuid">uuid-c3d4...</div>
+      <div class="key-preview">c3d4:importFile:1:hash</div>
+    </div>
+    <div class="inst-call">
+      <div class="call-label">Call 3</div>
+      <div class="uuid">uuid-e5f6...</div>
+      <div class="key-preview">e5f6:importFile:1:hash</div>
+    </div>
+  </div>
+  <p style="font-size:0.7rem;color:#8b949e;text-align:center;">Each call gets a unique UUID. Storage keys are namespaced: <code>instanceId:stepId:argHash</code></p>
+</div>
+
+<!-- ====== PHASE 2 ====== -->
+<div class="section" id="phase-2">
+  <div class="section-label runtime">Phase 2 &mdash; Resilience</div>
+  <div class="card-grid">
+    <div class="card">
+      <h4>Crash Recovery</h4>
+      <p>On workflow start, check storage for partial progress (incomplete step sequence). Resume from first uncompleted step rather than starting over. Detect stale/incomplete state and clean up.</p>
+    </div>
+    <div class="card">
+      <h4>Step Timeouts</h4>
+      <p>Each step can have an optional timeout. If a step exceeds its timeout, it is retried per the retry policy or the workflow fails.</p>
+    </div>
+    <div class="card">
+      <h4>Workflow-Level Timeout</h4>
+      <p>An overall timeout for the entire workflow. If exceeded, the workflow is aborted and state is cleaned up.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ====== PHASE 3 ====== -->
+<div class="section" id="phase-3">
+  <div class="section-label compiler">Phase 3 &mdash; Dev Experience</div>
+  <div class="card-grid">
+    <div class="card">
+      <h4>Lifecycle Hooks</h4>
+      <p><code>onStepStart</code>, <code>onStepComplete</code>, <code>onStepRetry</code>, <code>onStepFail</code>, <code>onWorkflowComplete</code>, <code>onWorkflowFail</code>. Passed via <code>@workflow({ hooks: { ... } })</code>.</p>
+    </div>
+    <div class="card">
+      <h4>Progress Reporting</h4>
+      <p>Emit progress events with step counts, estimated completion, and elapsed time for long-running workflows.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ====== PHASE 4 ====== -->
+<div class="section" id="phase-4">
+  <div class="section-label storage">Phase 4 &mdash; Advanced</div>
+  <div class="card-grid">
+    <div class="card">
+      <h4>Pluggable Storage</h4>
+      <p>Interface: <code>{ get, set, delete, has, clear }</code>. Built-in adapters: IndexedDB, in-memory, localStorage, OPFS. Custom adapters for Electron, Tauri, Node.js.</p>
+    </div>
+    <div class="card">
+      <h4>Sub-Workflows</h4>
+      <p>Allow one workflow to call another as a sub-workflow. Sub-workflow results are persisted and recoverable independently.</p>
+    </div>
+    <div class="card">
+      <h4>Serialization Hooks</h4>
+      <p>Register custom serializers for user-defined types via <code>registerSerializer(typeTag, { serialize, deserialize })</code>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ====== PHASE 5 ====== -->
+<div class="section" id="phase-5">
+  <div class="section-label runtime">Phase 5 &mdash; Tooling</div>
+  <div class="card-grid">
+    <div class="card">
+      <h4>Workflow Inspector</h4>
+      <p>A browser extension or embedded panel showing active workflows, current step, step history with timing, retries, errors, and stored state inspection.</p>
+    </div>
+    <div class="card">
+      <h4>Logging &amp; Telemetry</h4>
+      <p>Structured logging for each step execution. Optional integration with observability backends.</p>
+    </div>
+    <div class="card">
+      <h4>Testing Utilities</h4>
+      <p>Helpers to simulate crashes, retries, and step failures in tests. Mock storage backend for deterministic testing.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ====== PHASE 6 ====== -->
+<div class="section" id="phase-6">
+  <div class="section-label storage">Phase 6 &mdash; Hardening</div>
+  <div class="card-grid">
+    <div class="card">
+      <h4>Storage Quota</h4>
+      <p>Monitor storage usage and evict old/complete workflow state. Configurable max storage per workflow.</p>
+    </div>
+    <div class="card">
+      <h4>Error Classification</h4>
+      <p>Distinguish retryable errors (network, timeout) from fatal errors (invalid input, permission). Allow custom error classifiers.</p>
+    </div>
+    <div class="card">
+      <h4>Serialization Safety</h4>
+      <p>Deep-check step inputs and outputs for serializability. Provide hooks for custom serialization of complex types.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ====== PHASE 7 ====== -->
+<div class="section" id="phase-7">
+  <div class="section-label compiler">Phase 7 &mdash; Ecosystem</div>
+  <div class="card-grid">
+    <div class="card">
+      <h4>Framework Integrations</h4>
+      <p>Optional adapters for React, Vue, Svelte, Angular providing reactive state binding and progress display. Electron / Tauri adapters for file-system-backed storage.</p>
+    </div>
+    <div class="card">
+      <h4>Workflow Visualization</h4>
+      <p>Generate a static graph of workflow steps from source code analysis. Runtime visualization of active workflows.</p>
+    </div>
+    <div class="card">
+      <h4>CLI Scaffolding</h4>
+      <p><code>npx create-durable-workflow</code> to scaffold a new project. Code generation for common workflow patterns.</p>
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>
