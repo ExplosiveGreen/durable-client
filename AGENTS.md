@@ -63,7 +63,12 @@ All changes must be developed on a feature branch (never `main`). If the target 
 
 ### After pushing fixes, request a re-review
 
-After committing and pushing fixes for review comments, always trigger a re-review so the reviewer re-evaluates the latest commit. On GitHub, click the **↻ Re-request review** button next to the reviewer (e.g. `copilot-pull-request-reviewer`) on the PR page. Alternatively, use `gh pr comment` to notify the reviewer of the updates.
+After committing and pushing fixes for review comments, always trigger a re-review so the reviewer re-evaluates the latest commit. Two ways to do it:
+
+1. **Re-request review button**: On the PR page, click the **↻ Re-request review** button next to the reviewer (e.g. `copilot-pull-request-reviewer`).
+2. **Draft toggle** (triggers fresh Copilot review): Convert the PR to draft (**Convert to draft**), then mark it as **Ready for review** — this triggers a new Copilot review pass.
+
+Alternatively, use `gh pr comment` to notify the reviewer of the updates.
 
 ### Each new task starts a fresh pipeline
 
