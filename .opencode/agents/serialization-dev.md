@@ -19,7 +19,7 @@ You are implementing the serialization module for the durable workflow library.
 
 ### Serialization (PLAN.md §1.3)
 
-Create `packages/runtime/src/serialize.ts`:
+Create `packages/runtime/src/serialize.js`:
 
 - `async serialize(value)` — walks the value tree (must be async because hashing and binary reads are async):
   - Primitives, null, undefined: included directly

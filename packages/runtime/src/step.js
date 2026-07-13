@@ -7,7 +7,7 @@
  * @param {Object} [retryConfig] - Optional retry policy
  * @param {number} [retryConfig.maxRetries] - Max retries (alias: retries)
  * @param {number} [retryConfig.baseDelayMs] - Base delay in ms (alias: baseDelay)
- * @param {Array} [args] - Arguments to fn for cache key computation (optional)
+ * @param {*} [args] - Arguments to fn for cache key computation (optional)
  * @param {Object} [instance] - Workflow instance for key namespacing (optional)
  */
 const { stepStore } = require("./storage.js");

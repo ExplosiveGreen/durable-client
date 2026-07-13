@@ -1,6 +1,6 @@
 /**
- * Storage layer — two namespaced stores (steps + blobs) with
- * an in-memory Map fallback and IndexedDB persistence when available.
+ * Storage layer — two namespaced stores (steps + blobs) backed
+ * by an in-memory Map (pluggable; IndexedDB adapters can be added).
  *
  * The `Storage` class defines the pluggable storage interface (PLAN.md §4.1).
  * Custom adapters (IndexedDB, localStorage, OPFS, …) can extend it and be

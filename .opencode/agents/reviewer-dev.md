@@ -43,4 +43,4 @@ After another subagent finishes their work, you are called in to:
 ## Files you can edit
 - Any `.md` agent definition in `.opencode/agents/` (to fix instructions)
 - Any source code in `packages/` (to fix bugs)
-- `/home/ronb/Projects/durable-client/AGENTS.md` (to add prompt-level lessons)
+- `AGENTS.md` (repo root, to add prompt-level lessons)

@@ -15,7 +15,7 @@ async function serialize(value, visited = new WeakSet()) {
 
   if (value instanceof Date) return { __t: "d", v: value.toISOString() };
 
-  if (typeof Blob !== "undefined" && (value instanceof Blob || value instanceof File)) {
+  if (typeof Blob !== "undefined" && typeof File !== "undefined" && (value instanceof Blob || value instanceof File)) {
     const isFile = value instanceof File;
     const arrayBuf = await value.arrayBuffer();
     const h = await sha256(arrayBuf);
@@ -85,7 +85,7 @@ async function serialize(value, visited = new WeakSet()) {
       return result;
     }
     const result = {};
-    for (const key of Object.keys(value)) {
+    for (const key of Object.keys(value).sort()) {
       result[key] = await serialize(value[key], visited);
     }
     visited.delete(value);
