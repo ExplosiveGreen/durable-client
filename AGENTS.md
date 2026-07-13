@@ -67,6 +67,7 @@ After committing and pushing fixes for review comments, always trigger a re-revi
 
 1. **Re-request review button**: On the PR page, click the **↻ Re-request review** button next to the reviewer (e.g. `copilot-pull-request-reviewer`).
 2. **Draft toggle** (triggers fresh Copilot review): Convert the PR to draft (**Convert to draft**), then mark it as **Ready for review** — this triggers a new Copilot review pass.
+3. After the draft toggle, also click **↻ Re-request review** next to `copilot-pull-request-reviewer` on the PR page to ensure it re-evaluates.
 
 Alternatively, use `gh pr comment` to notify the reviewer of the updates.
 
