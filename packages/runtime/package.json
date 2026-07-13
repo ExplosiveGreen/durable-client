@@ -3,5 +3,6 @@
   "version": "0.1.0",
   "description": "Runtime core for durable client-side workflows",
   "main": "src/index.js",
+  "type": "module",
   "license": "MIT"
 }

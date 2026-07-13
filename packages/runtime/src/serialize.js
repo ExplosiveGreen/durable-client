@@ -2,7 +2,7 @@
  * Serialization module — walks value trees, replaces large binaries
  * with blob references, and produces deterministic string keys.
  */
-import { hash as sha256 } from "./hash.js";
+import { sha256 } from "./hash.js";
 import { blobStore } from "./blob-store.js";
 
 export function serialize(value, visited = new WeakSet()) {
@@ -116,6 +116,8 @@ export function deserialize(value) {
   return result;
 }
 
-export function toCacheKey(stepId, args) {
-  return `${stepId}:${sha256(JSON.stringify(serialize(args)))}`;
+export async function toCacheKey(stepId, args) {
+  if (args === undefined) return stepId;
+  const hash = await sha256(JSON.stringify(serialize(args)));
+  return `${stepId}:${hash}`;
 }
