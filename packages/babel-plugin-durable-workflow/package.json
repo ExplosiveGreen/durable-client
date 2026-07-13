@@ -10,5 +10,8 @@
   "peerDependencies": {
     "@babel/core": "^7.0.0"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.29.7"
+  }
 }

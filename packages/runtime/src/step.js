@@ -24,9 +24,10 @@ export async function __step(stepId, fn, retryConfig, args, instance) {
   }
 
   // Check for cached result
-  const cached = stepStore.get(cacheKey);
-  if (cached !== null) {
-    return deserialize(cached);
+  // Use has() instead of get() to correctly handle cached null values
+  // (serialize(null) returns null, which is a valid cached result).
+  if (stepStore.has(cacheKey)) {
+    return deserialize(stepStore.get(cacheKey));
   }
 
   // Normalize retry config — support both naming conventions

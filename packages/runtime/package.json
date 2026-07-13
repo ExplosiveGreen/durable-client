@@ -4,5 +4,8 @@
   "description": "Runtime core for durable client-side workflows",
   "main": "src/index.js",
   "type": "module",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.29.7"
+  }
 }
