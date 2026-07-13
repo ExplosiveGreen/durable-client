@@ -40,6 +40,23 @@ When implementing `deserialize`, every type that has a special serialized form (
 
 The `serialization-dev.md` agent instructions must explicitly list every deserialization reversal, not just the serialization format. See the updated `serialization-dev.md` for the full pattern.
 
+### Explicit step names must include the function name prefix
+
+When implementing `generateStepId`, the explicit name from `// @step("customName")` overrides only the auto-generated suffix (N), not the entire step ID. The return format must be `${functionName}:${explicitName}` to avoid step ID collisions across different workflow functions.
+
+The Babel plugin (`babel-plugin-dev`) generates `functionName:explicitName` for explicit steps. The `generateStepId` utility must produce the same format. See `naming-dev.md` for the correct pattern.
+
+Agent `.md` files that define step naming must explicitly describe the explicit name format as `${functionName}:${explicitName}`.
+
+### Guard `crypto.randomUUID` with `typeof crypto !== "undefined"`
+
+The global `crypto` object is available in modern browsers and Node.js 16+, but may be undefined in some environments (older browsers, certain workers). Code that accesses `crypto.randomUUID` must first check `typeof crypto !== "undefined"` to avoid a `ReferenceError`. This applies:
+
+1. In `instance.js` when generating UUID v4 instance IDs.
+2. Any other code that references the global `crypto` object.
+
+See `naming-dev.md` for the correct pattern.
+
 ## Prompt-Level Lessons
 
 *(None yet — add entries when the orchestrator's prompt to a subagent causes a bug.)*

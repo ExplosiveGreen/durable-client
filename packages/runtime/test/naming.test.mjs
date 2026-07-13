@@ -37,17 +37,17 @@ await check("generateStepId with auto-generated name (index > 0)", async () => {
 
 await check("generateStepId with explicit name override", async () => {
   const id = generateStepId("myFunction", 0, "customStepName");
-  assert.equal(id, "customStepName");
+  assert.equal(id, "myFunction:customStepName");
 });
 
 await check("generateStepId with explicit name (empty string)", async () => {
   const id = generateStepId("myFunction", 0, "");
-  assert.equal(id, "");
+  assert.equal(id, "myFunction:");
 });
 
 await check("generateStepId with explicit name (null)", async () => {
   const id = generateStepId("myFunction", 0, null);
-  assert.equal(id, null);
+  assert.equal(id, "myFunction:null");
 });
 
 await check("generateStepId with explicit name (undefined)", async () => {

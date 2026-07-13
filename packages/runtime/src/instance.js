@@ -6,7 +6,7 @@
 let counter = 0;
 
 export function createInstance() {
-  const id = crypto.randomUUID
+  const id = typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID()
     : `${Date.now()}-${++counter}-${Math.random().toString(36).slice(2, 10)}`;
 
