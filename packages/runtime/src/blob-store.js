@@ -2,6 +2,9 @@
  * Content-addressed blob store.
  * Deduplicates binary data by SHA-256 hash.
  * Uses an in-memory Map with IndexedDB persistence when available.
+ *
+ * Implements the same pluggable `Storage` interface shape as the step
+ * store (see storage.js): get / set / has / delete / clear.
  */
 
 class InMemoryBlobStore {
