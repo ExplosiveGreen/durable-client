@@ -57,6 +57,18 @@ The global `crypto` object is available in modern browsers and Node.js 16+, but 
 
 See `naming-dev.md` for the correct pattern.
 
+### Never push directly to `main`; always use a feature branch
+
+All changes must be developed on a feature branch (never `main`). If the target branch doesn't exist, create it first. After pushing, create a PR if one doesn't exist. Wait for the PR review to be approved before considering the work complete.
+
+### After pushing fixes, request a re-review
+
+After committing and pushing fixes for review comments, always trigger a re-review so the reviewer re-evaluates the latest commit. On GitHub, click the **↻ Re-request review** button next to the reviewer (e.g. `copilot-pull-request-reviewer`) on the PR page. Alternatively, use `gh pr comment` to notify the reviewer of the updates.
+
+### Each new task starts a fresh pipeline
+
+When beginning a new task, create a new feature branch (or reuse the existing one if instructed) and follow the same cycle: branch → push → PR → wait for review → merge on approval.
+
 ## Prompt-Level Lessons
 
 *(None yet — add entries when the orchestrator's prompt to a subagent causes a bug.)*
