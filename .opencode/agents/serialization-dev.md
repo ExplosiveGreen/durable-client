@@ -32,7 +32,17 @@ Create `packages/runtime/src/serialize.ts`:
   - `RegExp`: `{ __t: "r", v: "/pattern/flags" }`
   - `Error`: `{ __t: "e", v: { name, message, stack } }`
   - Plain objects/arrays: recurse with `await serialize()`
-- `deserialize(value)` — reverses the process
+- `deserialize(value)` — reverses the process:
+  - For `__t: "d"` → `new Date(value.v)`
+  - For `__t: "n"` → `BigInt(value.v)`
+  - For `__t: "r"` → parse the `/pattern/flags` string back to `new RegExp(pattern, flags)`
+  - For `__t: "e"` → reconstruct the Error (or subclass like TypeError) with `{ name, message, stack }`
+  - For `__t: "b"` → `blobStore.get(value.h)` returns the original ArrayBuffer
+  - For `__t: "l"` (Blob) → reconstruct `new Blob([blobStore.get(value.h)], { type: value.m.type })` using the stored metadata
+  - For `__t: "f"` (File) → reconstruct `new File([blobStore.get(value.h)], value.m.name, { type: value.m.type, lastModified: value.m.lastModified })` using the stored metadata
+  - For `__t: "m"` → `new Map(entries)` where entries are recursively deserialized
+  - For `__t: "s"` → `new Set(values)` where values are recursively deserialized
+  - Plain objects/arrays: recurse
 - `async hash(value)` — SHA-256 of the serialized string (NOTE: the actual SHA-256 function is async; see hash.js)
 
 ### Cache Key (PLAN.md §1.5)

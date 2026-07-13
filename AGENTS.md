@@ -31,6 +31,15 @@ When reading binary data from a `Blob` or `File`, use the async `await value.arr
 
 The storage layer's `get(key)` method must distinguish between "key not found" (return `null`) and "key found with value `undefined`" (return `undefined`). Using `Map.get(key) ?? null` conflates these two cases because `Map.get` returns `undefined` for both missing keys and keys whose value is `undefined`. Instead, call `Map.has(key)` first — if the key exists, return `Map.get(key)` (which may be `undefined`); otherwise return `null`.
 
+### Deserialization must reconstruct all types, not just extract data
+
+When implementing `deserialize`, every type that has a special serialized form (type marker `__t`) must be reconstructed back to its original type, not just have its data extracted. This includes:
+- `Blob` (`__t: "l"`): reconstruct as `new Blob([data], { type })` using the stored metadata
+- `File` (`__t: "f"`): reconstruct as `new File([data], name, { type, lastModified })` using the stored metadata
+- Returning raw `ArrayBuffer` instead of the reconstructed type breaks the contract that `deserialize(serialize(value))` is equivalent to `value`
+
+The `serialization-dev.md` agent instructions must explicitly list every deserialization reversal, not just the serialization format. See the updated `serialization-dev.md` for the full pattern.
+
 ## Prompt-Level Lessons
 
 *(None yet — add entries when the orchestrator's prompt to a subagent causes a bug.)*

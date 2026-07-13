@@ -120,8 +120,17 @@ export function deserialize(value) {
     return err;
   }
   if (value.__t === "b") return blobStore.get(value.h);
-  if (value.__t === "f") return blobStore.get(value.h);
-  if (value.__t === "l") return blobStore.get(value.h);
+  if (value.__t === "f") {
+    const data = blobStore.get(value.h);
+    return new File([data], value.m.name, {
+      type: value.m.type,
+      lastModified: value.m.lastModified,
+    });
+  }
+  if (value.__t === "l") {
+    const data = blobStore.get(value.h);
+    return new Blob([data], { type: value.m.type });
+  }
   if (value.__t === "m") return new Map(value.v.map(([k, v]) => [deserialize(k), deserialize(v)]));
   if (value.__t === "s") return new Set(value.v.map(deserialize));
 
@@ -142,5 +151,5 @@ export async function toCacheKey(stepId, args) {
  * SHA-256 of the serialized string form of a value (PLAN.md §1.3).
  */
 export async function hash(value) {
-  return sha256(JSON.stringify(await serialize(value)));
+  return await sha256(JSON.stringify(await serialize(value)));
 }

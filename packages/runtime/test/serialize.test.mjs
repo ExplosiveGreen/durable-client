@@ -87,11 +87,15 @@ await check("Blob", async () => {
   const blob2 = new Blob(["hello world"], { type: "text/plain" });
   const s2 = await serialize(blob2);
   assert.equal(s2.h, s.h);
-  // data retrievable from blob store
+  // data retrievable from blob store (raw ArrayBuffer)
   const stored = blobStore.get(s.h);
   assert.equal(new TextDecoder().decode(stored), "hello world");
+  // deserialized reconstructs a Blob
   const d = deserialize(s);
-  assert.equal(new TextDecoder().decode(d), "hello world");
+  assert.ok(d instanceof Blob);
+  assert.equal(d.type, "text/plain");
+  const dContent = await d.arrayBuffer();
+  assert.equal(new TextDecoder().decode(dContent), "hello world");
 });
 
 await check("File keeps metadata", async () => {
@@ -106,8 +110,14 @@ await check("File keeps metadata", async () => {
     type: "text/plain",
     lastModified: 12345,
   });
+  // deserialized reconstructs a File
   const d = deserialize(s);
-  assert.equal(new TextDecoder().decode(d), "data");
+  assert.ok(d instanceof File);
+  assert.equal(d.name, "note.txt");
+  assert.equal(d.type, "text/plain");
+  assert.equal(d.lastModified, 12345);
+  const dContent = await d.arrayBuffer();
+  assert.equal(new TextDecoder().decode(dContent), "data");
 });
 
 await check("ArrayBuffer", async () => {
