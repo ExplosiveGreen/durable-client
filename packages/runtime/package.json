@@ -1,0 +1,11 @@
+{
+  "name": "@durable/runtime",
+  "version": "0.1.0",
+  "description": "Runtime core for durable client-side workflows",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.29.7"
+  }
+}
