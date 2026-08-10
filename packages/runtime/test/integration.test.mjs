@@ -21,7 +21,7 @@ import babel from "@babel/core";
 
 import { __step } from "../src/step.js";
 import { serialize, deserialize, toCacheKey, hash } from "../src/serialize.js";
-import { sha256 } from "../src/hash.js";
+import { sha256, sha256Bytes, registerSha256 } from "../src/hash.js";
 import { stepStore, clearAll, InMemoryStore } from "../src/storage.js";
 import { blobStore } from "../src/blob-store.js";
 import { generateStepId } from "../src/step-naming.js";
@@ -339,6 +339,39 @@ await check("sha256: ArrayBuffer input", async () => {
   const buf = new TextEncoder().encode("hello").buffer;
   const h = await sha256(buf);
   assert.match(h, /^[0-9a-f]{64}$/);
+});
+
+await check("sha256 pure-JS fallback: matches WebCrypto for string", async () => {
+  const webHex = await sha256("hello");
+  assert.equal(sha256Bytes("hello"), webHex);
+  // Known-good vector: SHA-256 of "hello"
+  assert.equal(webHex, "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824");
+});
+
+await check("sha256 pure-JS fallback: matches WebCrypto for ArrayBuffer", async () => {
+  const buf = new TextEncoder().encode("hello world").buffer;
+  const webHex = await sha256(buf);
+  assert.equal(sha256Bytes(buf), webHex);
+});
+
+await check("sha256 pure-JS fallback: unicode string", async () => {
+  const webHex = await sha256("héllo wörld ✓ 日本語");
+  assert.equal(sha256Bytes("héllo wörld ✓ 日本語"), webHex);
+});
+
+await check("registerSha256: custom impl is used and takes precedence", async () => {
+  registerSha256(async (input) => {
+    assert.ok(typeof input === "string" || input instanceof ArrayBuffer);
+    return "custom-hash";
+  });
+  assert.equal(await sha256("anything"), "custom-hash");
+  registerSha256(null); // reset back to default resolution
+  assert.notEqual(await sha256("anything"), "custom-hash");
+});
+
+await check("registerSha256: rejects non-function", async () => {
+  assert.throws(() => registerSha256(42), /expected a function/);
+  registerSha256(null);
 });
 
 // ---------------------------------------------------------------------------
